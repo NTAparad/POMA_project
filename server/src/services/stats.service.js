@@ -1,5 +1,5 @@
+const mongoose = require('mongoose');
 const Task = require('../models/Task');
-const Member = require('../models/Member');
 
 /**
  * MODULE THỐNG KÊ — phụ trách: TV2
@@ -8,25 +8,43 @@ const Member = require('../models/Member');
  * Trả về số liệu tổng hợp phục vụ các thẻ số và hai biểu đồ trên giao diện.
  */
 async function getProjectStats(projectId) {
-  // TODO (TV2):
-  // 1. Đếm số task theo từng trạng thái (todo, in_progress, review, done)
-  // 2. Tính completionRate = done / total, chú ý trường hợp total = 0
-  // 3. Đếm số task quá hạn: dueDate < hiện tại và status !== 'done'
-  // 4. Nhóm số task theo assignee để vẽ biểu đồ cột
-  //
-  // Gợi ý dùng aggregate:
-  // const byStatus = await Task.aggregate([
-  //   { $match: { project: new mongoose.Types.ObjectId(projectId) } },
-  //   { $group: { _id: '$status', count: { $sum: 1 } } },
-  // ]);
+  const tasks = await Task.aggregate([
+    { $match: { project: new mongoose.Types.ObjectId(projectId) } },
+    {
+      $lookup: {
+        from: 'users', localField: 'assignee', foreignField: '_id', as: 'assigneeUser',
+      },
+    },
+    { $unwind: { path: '$assigneeUser', preserveNullAndEmptyArrays: true } },
+    { $project: { status: 1, dueDate: 1, assignee: 1, fullName: '$assigneeUser.fullName' } },
+  ]);
 
-  return {
-    total: 0,
-    byStatus: { todo: 0, in_progress: 0, review: 0, done: 0 },
-    completionRate: 0,
-    overdue: 0,
-    byAssignee: [],
-  };
+  const byStatus = { todo: 0, in_progress: 0, review: 0, done: 0 };
+  const assigneeMap = new Map();
+  let overdue = 0;
+  const now = new Date();
+
+  tasks.forEach((task) => {
+    if (byStatus[task.status] !== undefined) byStatus[task.status] += 1;
+    if (task.dueDate && task.dueDate < now && task.status !== 'done') overdue += 1;
+
+    const userId = task.assignee ? String(task.assignee) : null;
+    if (!assigneeMap.has(userId)) {
+      assigneeMap.set(userId, {
+        userId: task.assignee || null,
+        fullName: task.assignee ? task.fullName : 'Chưa giao',
+        count: 0,
+        done: 0,
+      });
+    }
+    const summary = assigneeMap.get(userId);
+    summary.count += 1;
+    if (task.status === 'done') summary.done += 1;
+  });
+
+  const total = tasks.length;
+
+  return { total, byStatus, completionRate: total ? byStatus.done / total : 0, overdue, byAssignee: [...assigneeMap.values()] };
 }
 
 module.exports = { getProjectStats };
