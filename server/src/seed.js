@@ -22,9 +22,9 @@ async function run() {
 
   const [admin, an, binh, cuong] = await User.create([
     { fullName: 'Quản trị hệ thống', email: 'admin@poma.vn', password: '123456', role: 'admin' },
-    { fullName: 'Nguyễn Văn An', email: 'an@poma.vn', password: '123456' },
-    { fullName: 'Trần Thị Bình', email: 'binh@poma.vn', password: '123456' },
-    { fullName: 'Lê Minh Cường', email: 'cuong@poma.vn', password: '123456' },
+    { fullName: 'Nguyễn Tấn Anh', email: 'anh@poma.vn', password: '123456' },
+    { fullName: 'Nguyễn Thị Kim Oanh', email: 'oanh@poma.vn', password: '123456' },
+    { fullName: 'Nguyễn Việt Bách', email: 'bach@poma.vn', password: '123456' },
   ]);
 
   const project = await Project.create({
@@ -61,7 +61,7 @@ async function run() {
   ]);
 
   console.log('Đã tạo dữ liệu mẫu.');
-  console.log('Đăng nhập thử: an@poma.vn / 123456');
+  console.log('Đăng nhập thử: anh@poma.vn / 123456');
   process.exit(0);
 }
 

@@ -79,7 +79,7 @@ export default function Members() {
                 <td className="px-4 py-3 font-mono text-xs text-ink-500">{m.user?.email}</td>
                 <td className="px-4 py-3">{m.role === 'manager' ? 'Quản trị dự án' : 'Thành viên'}</td>
                 <td className="px-4 py-3 text-right">
-                  {project?.myRole === 'manager' && member.user?._id !== user?._id && <button className="btn-danger px-2.5 py-1 text-xs" disabled={saving} onClick={() => remove(member)}>Gỡ khỏi dự án</button>}
+                  {project?.myRole === 'manager' && m.user?._id !== user?._id && <button className="btn-danger px-2.5 py-1 text-xs" disabled={saving} onClick={() => remove(m)}>Gỡ khỏi dự án</button>}
                 </td>
               </tr>
             ))}

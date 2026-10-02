@@ -51,9 +51,9 @@ Mở trình duyệt vào http://localhost:5173
 | Email | Mật khẩu | Vai trò |
 |---|---|---|
 | admin@poma.vn | 123456 | Quản trị hệ thống |
-| an@poma.vn | 123456 | Quản trị dự án (dự án mẫu) |
-| binh@poma.vn | 123456 | Thành viên |
-| cuong@poma.vn | 123456 | Thành viên |
+| anh@poma.vn | 123456 | Quản trị dự án (dự án mẫu) |
+| oanh@poma.vn | 123456 | Thành viên |
+| bach@poma.vn | 123456 | Thành viên |
 
 ## 4. Phân công module
 
