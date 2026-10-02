@@ -15,6 +15,12 @@ const taskSchema = new mongoose.Schema({
   order: { type: Number, default: 0 },
 }, { timestamps: true });
 
+// Chỉ mục phục vụ việc dựng bảng Kanban và các bộ lọc trên bảng công việc
+taskSchema.index({ project: 1, status: 1, order: 1 });
+taskSchema.index({ project: 1, assignee: 1 });
+taskSchema.index({ project: 1, priority: 1 });
+taskSchema.index({ project: 1, dueDate: 1 });
+
 module.exports = mongoose.model('Task', taskSchema);
 module.exports.TASK_STATUS = TASK_STATUS;
 module.exports.TASK_PRIORITY = TASK_PRIORITY;
