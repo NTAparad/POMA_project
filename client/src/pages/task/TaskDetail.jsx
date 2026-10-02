@@ -1,17 +1,35 @@
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import api, { errMsg } from '../../lib/api';
 import Alert from '../../components/Alert';
 import { useAuth } from '../../store/auth';
+import TaskForm from '../board/TaskForm';
+
+const STATUS_LABEL = {
+  todo: 'Cần làm',
+  in_progress: 'Đang làm',
+  review: 'Chờ duyệt',
+  done: 'Hoàn thành',
+};
 
 /**
  * Chi tiết công việc — TV3 phụ trách phần thông tin, TV1 phụ trách khung bình luận.
  */
 export default function TaskDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const [task, setTask] = useState(null);
+
+  // =========================
+  // THÔNG TIN CÔNG VIỆC — TV3
+  // =========================
+  const [project, setProject] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [taskError, setTaskError] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [taskBusy, setTaskBusy] = useState(false);
 
   // =========================
   // MODULE BÌNH LUẬN — TV1
@@ -53,14 +71,58 @@ export default function TaskDetail() {
 
   const load = async () => {
     try {
-      const [t] = await Promise.all([
-        api.get(`/tasks/${id}`),
-      ]);
-      console.log('TASK DATA:', t.data.data);
+      const t = await api.get(`/tasks/${id}`);
+      const loaded = t.data.data;
+      setTask(loaded);
 
-      setTask(t.data.data);
+      // Lấy thêm dự án và danh sách thành viên để biết quyền và để sửa công việc
+      const projectId = loaded.project?._id || loaded.project;
+      if (projectId) {
+        const [p, m] = await Promise.all([
+          api.get(`/projects/${projectId}`),
+          api.get(`/projects/${projectId}/members`),
+        ]);
+        setProject(p.data.data);
+        setMembers(m.data.data);
+      }
     } catch (e) {
-      setCommentError(errMsg(e));
+      setTaskError(errMsg(e));
+    }
+  };
+
+  // =========================
+  // SỬA VÀ XOÁ CÔNG VIỆC — TV3
+  // =========================
+  const isProjectManager = project?.myRole === 'manager';
+
+  const saveTask = async (data) => {
+    setTaskBusy(true);
+    setTaskError('');
+
+    try {
+      const { data: res } = await api.put(`/tasks/${id}`, data);
+      setTask((prev) => ({ ...prev, ...res.data }));
+      setShowForm(false);
+    } catch (e) {
+      setTaskError(errMsg(e));
+    } finally {
+      setTaskBusy(false);
+    }
+  };
+
+  const removeTask = async () => {
+    if (!window.confirm(
+      `Xoá công việc "${task.title}"? Mọi bình luận trong công việc cũng bị xoá.`
+    )) return;
+
+    setTaskError('');
+
+    try {
+      await api.delete(`/tasks/${id}`);
+      const projectId = task.project?._id || task.project;
+      navigate(projectId ? `/du-an/${projectId}` : '/du-an');
+    } catch (e) {
+      setTaskError(errMsg(e));
     }
   };
 
@@ -231,12 +293,52 @@ export default function TaskDetail() {
     return <p className="text-sm text-ink-500">Đang tải…</p>;
   }
 
+  const projectId = task.project?._id || task.project;
+  const overdue =
+    task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'done';
+
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-bold">{task.title}</h1>
+      {projectId && (
+        <Link to={`/du-an/${projectId}`} className="text-sm text-ink-500 hover:text-ink-900">
+          ← Quay lại bảng công việc
+        </Link>
+      )}
 
-      <dl className="mt-5 grid gap-4 sm:grid-cols-3">
+      <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
+        <h1 className="text-2xl font-bold">{task.title}</h1>
+
+        {isProjectManager && (
+          <div className="flex gap-2">
+            <button type="button" className="btn-ghost" onClick={() => setShowForm(true)}>
+              Sửa công việc
+            </button>
+            <button type="button" className="btn-danger" onClick={removeTask}>
+              Xoá công việc
+            </button>
+          </div>
+        )}
+      </div>
+
+      {taskError && (
+        <div className="mt-3">
+          <Alert>{taskError}</Alert>
+        </div>
+      )}
+
+      {showForm && (
+        <TaskForm
+          members={members}
+          task={task}
+          busy={taskBusy}
+          onSubmit={saveTask}
+          onCancel={() => setShowForm(false)}
+        />
+      )}
+
+      <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
+          ['Trạng thái', STATUS_LABEL[task.status] || task.status],
           ['Người thực hiện', task.assignee?.fullName || 'Chưa giao'],
           [
             'Độ ưu tiên',
@@ -247,7 +349,7 @@ export default function TaskDetail() {
           [
             'Hạn hoàn thành',
             task.dueDate
-              ? new Date(task.dueDate).toLocaleDateString('vi-VN')
+              ? `${overdue ? 'Quá hạn ' : ''}${new Date(task.dueDate).toLocaleDateString('vi-VN')}`
               : 'Không đặt',
           ],
         ].map(([k, v]) => (

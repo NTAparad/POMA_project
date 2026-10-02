@@ -12,6 +12,8 @@
   .btn-primary { @apply btn bg-ink-900 text-white hover:bg-ink-700 disabled:opacity-40; }
   .btn-ghost { @apply btn border border-ink-100 bg-white text-ink-700 hover:border-ink-300; }
   .btn-danger { @apply btn bg-signal text-white hover:brightness-95; }
+  /* Nút phụ, dùng cho các thao tác Huỷ bên cạnh nút chính */
+  .btn-secondary { @apply btn border border-ink-100 bg-ink-50 text-ink-700 hover:bg-ink-100 disabled:opacity-40; }
   .field { @apply w-full rounded-lg border border-ink-100 bg-white px-3 py-2 text-sm
            placeholder:text-ink-300 focus:border-ink-500 focus:outline-none; }
   .label { @apply mb-1.5 block text-sm font-medium text-ink-700; }
